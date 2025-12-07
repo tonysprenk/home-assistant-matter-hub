@@ -6,9 +6,9 @@ import { BasicInformationServer } from "../../../behaviors/basic-information-ser
 import { HomeAssistantEntityBehavior } from "../../../behaviors/home-assistant-entity-behavior.js";
 import { IdentifyServer } from "../../../behaviors/identify-server.js";
 import { VacuumOnOffServer } from "./behaviors/vacuum-on-off-server.js";
+import { VacuumRvcCleanModeServer } from "./behaviors/vacuum-rvc-clean-mode-server.js";
 import { VacuumRvcOperationalStateServer } from "./behaviors/vacuum-rvc-operational-state-server.js";
 import { VacuumRvcRunModeServer } from "./behaviors/vacuum-rvc-run-mode-server.js";
-import { VacuumRvcCleanModeServer } from "./behaviors/vacuum-rvc-clean-mode-server.js";
 
 const VacuumEndpointType = RoboticVacuumCleanerDevice.with(
   BasicInformationServer,
@@ -16,7 +16,7 @@ const VacuumEndpointType = RoboticVacuumCleanerDevice.with(
   HomeAssistantEntityBehavior,
   VacuumRvcOperationalStateServer,
   VacuumRvcRunModeServer,
-  VacuumRvcCleanModeServer,   // ← add this line
+  VacuumRvcCleanModeServer,
 );
 
 export function VacuumDevice(
@@ -27,10 +27,13 @@ export function VacuumDevice(
   }
 
   const attributes = homeAssistantEntity.entity.state.attributes;
-  const supportedFeatures = attributes.supported_features ?? 0;
+  const supportedFeatures: number = attributes.supported_features ?? 0;
+
   let device = VacuumEndpointType.set({ homeAssistantEntity });
+
   if (testBit(supportedFeatures, VacuumDeviceFeature.START)) {
     device = device.with(VacuumOnOffServer);
   }
+
   return device;
 }
