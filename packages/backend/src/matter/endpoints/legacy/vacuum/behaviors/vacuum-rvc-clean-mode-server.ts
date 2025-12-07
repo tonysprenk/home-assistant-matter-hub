@@ -5,14 +5,13 @@ import {
 } from "../../../../behaviors/rvc-clean-mode-server.js";
 
 // Simple in-memory mode so Matter can reflect the selected mode
-let currentCleanMode: RvcSupportedCleanMode = RvcSupportedCleanMode.Both;
+let currentCleanMode: RvcSupportedCleanMode = RvcCleanMode.Mode.Both;
 
 /**
  * NOTE:
- * - This assumes you create an input_select in HA:
+ * - This example assumes you create an input_select in HA:
  *     input_select.rvc_clean_mode
  *   with options: "Vacuum", "Mop", "Both".
- *
  * - You can then use an automation/script in HA that reacts to changes of this
  *   input_select and actually calls your Roborock / vacuum services.
  *
@@ -20,23 +19,23 @@ let currentCleanMode: RvcSupportedCleanMode = RvcSupportedCleanMode.Both;
  *   logic lives in HA where it belongs.
  */
 export const VacuumRvcCleanModeServer = RvcCleanModeServer({
-  // Source of truth for the current mode exposed to Matter
+  // we keep the source of truth in currentCleanMode
   getCurrentMode: () => currentCleanMode,
 
   getSupportedModes: () => [
     {
       label: "Vacuum",
-      mode: RvcSupportedCleanMode.Vacuum,
+      mode: RvcCleanMode.Mode.Vacuum,
       modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }],
     },
     {
       label: "Mop",
-      mode: RvcSupportedCleanMode.Mop,
+      mode: RvcCleanMode.Mode.Mop,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }],
     },
     {
       label: "Both",
-      mode: RvcSupportedCleanMode.Both,
+      mode: RvcCleanMode.Mode.Both,
       modeTags: [{ value: RvcCleanMode.ModeTag.VacuumAndMop }],
     },
   ],
@@ -47,12 +46,13 @@ export const VacuumRvcCleanModeServer = RvcCleanModeServer({
     // Map enum → human-readable option for the helper
     let option: string;
     switch (currentCleanMode) {
-      case RvcSupportedCleanMode.Vacuum:
+      case RvcCleanMode.Mode.Vacuum:
         option = "Vacuum";
         break;
-      case RvcSupportedCleanMode.Mop:
+      case RvcCleanMode.Mode.Mop:
         option = "Mop";
         break;
+      case RvcCleanMode.Mode.Both:
       default:
         option = "Both";
         break;
