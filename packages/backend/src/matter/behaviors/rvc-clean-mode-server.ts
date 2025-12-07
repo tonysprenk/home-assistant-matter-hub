@@ -1,10 +1,7 @@
-import type { HomeAssistantEntityInformation } from "@home-assistant-matter-hub/common";
 import { RvcCleanModeServer as Base } from "@matter/main/behaviors";
 import { ModeBase } from "@matter/main/clusters/mode-base";
-import type { RvcCleanMode } from "@matter/main/clusters/rvc-clean-mode";
 import { applyPatchState } from "../../utils/apply-patch-state.js";
 import { HomeAssistantEntityBehavior } from "./home-assistant-entity-behavior.js";
-import type { ValueGetter, ValueSetter } from "./utils/cluster-config.js";
 
 export enum RvcSupportedCleanMode {
   Vacuum = 0,
@@ -12,59 +9,53 @@ export enum RvcSupportedCleanMode {
   Both = 2,
 }
 
-export interface RvcCleanModeServerConfig {
-  // read current mode from HA (or internal state)
-  getCurrentMode: ValueGetter;
-  // list of supported modes
-  getSupportedModes: ValueGetter;
-  // called when controller changes mode
-  setMode: ValueSetter;
+export interface RvcCleanModeServerImplementation {
+  getCurrentMode(): RvcSupportedCleanMode;
+  getSupportedModes(): ModeBase.ModeOptionStruct[];
+  setMode(newMode: RvcSupportedCleanMode): unknown;
 }
 
-// biome-ignore lint/correctness/noUnusedVariables:
-class RvcCleanModeServerBase extends Base {
-  declare state: RvcCleanModeServerBase.State;
+/**
+ * Generic RVC Clean Mode server that:
+ * - exposes the current mode + supported modes to Matter
+ * - calls the provided implementation whenever Matter requests a mode change
+ * - gives the implementation a chance to push changes into Home Assistant
+ */
+export const RvcCleanModeServer = (impl: RvcCleanModeServerImplementation) =>
+  Base.with<HomeAssistantEntityBehavior>({
+    // From Home Assistant → Matter
+    updateFromHomeAssistant(state, _haEntity) {
+      // For now we treat Matter as the source of truth for the clean mode.
+      // If you later want HA to drive the mode, you can read attributes from
+      // _haEntity here and patch the state accordingly.
+      return state;
+    },
 
-  override async initialize() {
-    const homeAssistant = await this.agent.load(HomeAssistantEntityBehavior);
-    this.update(homeAssistant.entity);
-    this.reactTo(homeAssistant.onChange, this.update);
-    await super.initialize();
-  }
+    // Called when the endpoint is created
+    async initialize(_endpoint, matterServer) {
+      const currentMode = impl.getCurrentMode();
+      const supportedModes = impl.getSupportedModes();
 
-  private update(entity: HomeAssistantEntityInformation) {
-    applyPatchState(this.state, {
-      currentMode: this.state.config.getCurrentMode(entity.state, this.agent),
-      supportedModes: this.state.config.getSupportedModes(
-        entity.state,
-        this.agent,
-      ),
-    });
-  }
+      applyPatchState(matterServer, {
+        currentMode,
+        supportedModes,
+      });
+    },
 
-  override changeToMode(
-    request: ModeBase.ChangeToModeRequest,
-  ): ModeBase.ChangeToModeResponse {
-    const homeAssistant = this.agent.get(HomeAssistantEntityBehavior);
+    // From Matter → Home Assistant
+    async changeToMode(_endpoint, matterServer, request) {
+      const newMode = request.newMode as RvcSupportedCleanMode;
 
-    // delegate to the configured setter
-    homeAssistant.callAction(
-      this.state.config.setMode(request.newMode, this.agent),
-    );
+      // Let the implementation handle any HA actions, scripts, helpers, etc.
+      const action = impl.setMode(newMode);
 
-    return {
-      status: ModeBase.ModeChangeStatus.Success,
-      statusText: "Successfully changed clean mode",
-    };
-  }
-}
+      // Reflect the new mode in the Matter state
+      applyPatchState(matterServer, {
+        currentMode: newMode,
+      });
 
-namespace RvcCleanModeServerBase {
-  export class State extends Base.State {
-    config!: RvcCleanModeServerConfig;
-  }
-}
-
-export function RvcCleanModeServer(config: RvcCleanModeServerConfig) {
-  return RvcCleanModeServerBase.set({ config });
-}
+      // The returned value is passed back to the caller (and in HA’s case
+      // can be used to trigger automations based on this metadata).
+      return action;
+    },
+  });
