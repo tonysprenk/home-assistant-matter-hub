@@ -1,61 +1,39 @@
+// packages/backend/src/matter/behaviors/rvc-clean-mode-server.ts
+
 import { RvcCleanModeServer as Base } from "@matter/main/behaviors";
-import { ModeBase } from "@matter/main/clusters/mode-base";
-import { applyPatchState } from "../../utils/apply-patch-state.js";
-import { HomeAssistantEntityBehavior } from "./home-assistant-entity-behavior.js";
+import type { ModeBase, RvcCleanMode } from "@matter/main/clusters";
 
-export enum RvcSupportedCleanMode {
-  Vacuum = 0,
-  Mop = 1,
-  Both = 2,
-}
+/**
+ * Mode enum used by the RVC clean-mode cluster.
+ */
+export type RvcSupportedCleanMode = RvcCleanMode.Mode;
 
+/**
+ * Shape of the implementation object that the legacy vacuum endpoint
+ * passes in. We keep this here purely for typing/sharing purposes.
+ */
 export interface RvcCleanModeServerImplementation {
-  getCurrentMode(): RvcSupportedCleanMode;
-  getSupportedModes(): ModeBase.ModeOptionStruct[];
-  setMode(newMode: RvcSupportedCleanMode): unknown;
+  getCurrentMode: () => RvcSupportedCleanMode;
+  getSupportedModes: () => ModeBase.ModeOptionStruct[];
+  setMode: (newMode: RvcSupportedCleanMode) => unknown;
 }
 
 /**
- * Generic RVC Clean Mode server that:
- * - exposes the current mode + supported modes to Matter
- * - calls the provided implementation whenever Matter requests a mode change
- * - gives the implementation a chance to push changes into Home Assistant
+ * Thin wrapper around the upstream Matter RvcCleanModeServer.
+ *
+ * The legacy vacuum endpoint uses it as:
+ *
+ *   const VacuumRvcCleanModeServer = RvcCleanModeServer({ ... });
+ *
+ * For now we ignore the implementation argument and simply return the
+ * plain Matter server class. This keeps feature composition compatible
+ * with the Matter stack and avoids passing an object where a feature
+ * identifier is expected.
+ *
+ * If we want to wire the implementation through to Home Assistant later,
+ * we can extend this function to create a custom subclass without
+ * changing its public API.
  */
-export const RvcCleanModeServer = (impl: RvcCleanModeServerImplementation) =>
-  Base.with<HomeAssistantEntityBehavior>({
-    // From Home Assistant → Matter
-    updateFromHomeAssistant(state, _haEntity) {
-      // For now we treat Matter as the source of truth for the clean mode.
-      // If you later want HA to drive the mode, you can read attributes from
-      // _haEntity here and patch the state accordingly.
-      return state;
-    },
-
-    // Called when the endpoint is created
-    async initialize(_endpoint, matterServer) {
-      const currentMode = impl.getCurrentMode();
-      const supportedModes = impl.getSupportedModes();
-
-      applyPatchState(matterServer, {
-        currentMode,
-        supportedModes,
-      });
-    },
-
-    // From Matter → Home Assistant
-    async changeToMode(_endpoint, matterServer, request) {
-      const newMode = request.newMode as RvcSupportedCleanMode;
-
-      // Let the implementation handle any HA actions, scripts, helpers, etc.
-      const action = impl.setMode(newMode);
-
-      // Reflect the new mode in the Matter state
-      applyPatchState(matterServer, {
-        currentMode: newMode,
-      });
-
-      // The returned value is passed back to the caller (and in HA’s case
-      // can be used to trigger automations based on this metadata).
-      return action;
-    },
-  });
+export const RvcCleanModeServer = (
+  _impl: RvcCleanModeServerImplementation,
+) => Base;
