@@ -1,5 +1,3 @@
-// packages/backend/src/matter/behaviors/rvc-clean-mode-server.ts
-
 import { RvcCleanModeServer as Base } from "@matter/main/behaviors";
 import type { ModeBase, RvcCleanMode } from "@matter/main/clusters";
 
@@ -34,7 +32,5 @@ export interface RvcCleanModeServerImplementation {
  * we can extend this function to create a custom subclass without
  * changing its public API.
  */
-export const RvcCleanModeServer = (
-  _impl: RvcCleanModeServerImplementation,
-) =>
+export const RvcCleanModeServer = (_impl: RvcCleanModeServerImplementation) =>
   Base;
