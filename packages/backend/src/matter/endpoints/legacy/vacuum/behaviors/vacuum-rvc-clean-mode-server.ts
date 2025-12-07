@@ -7,19 +7,7 @@ import {
 // simple in-memory mode so Matter can reflect the selected mode
 let currentCleanMode: RvcSupportedCleanMode = RvcSupportedCleanMode.Both;
 
-/**
- * NOTE:
- * - This example assumes you create an input_select in HA:
- *     input_select.rvc_clean_mode
- *   with options: "Vacuum", "Mop", "Both".
- * - You can then use an automation/script in HA that reacts to changes of this
- *   input_select and actually calls your Roborock / vacuum services.
- *
- *   That way the Matter add-on stays generic and the integration-specific
- *   logic lives in HA where it belongs.
- */
 export const VacuumRvcCleanModeServer = RvcCleanModeServer({
-  // we keep the source of truth in currentCleanMode
   getCurrentMode: () => currentCleanMode,
 
   getSupportedModes: () => [
@@ -43,28 +31,41 @@ export const VacuumRvcCleanModeServer = RvcCleanModeServer({
   setMode: (newMode) => {
     currentCleanMode = newMode as RvcSupportedCleanMode;
 
-    // Map enum → human-readable option for the helper
-    let option: string;
+    // 🔧 ADJUST THESE service names / data to whatever
+    // your Dreame / vacuum integration actually uses.
+    const entity_id = "vacuum.x40_ultra_complete";
+
     switch (currentCleanMode) {
       case RvcSupportedCleanMode.Vacuum:
-        option = "Vacuum";
-        break;
+        return {
+          action: "vacuum.send_command",
+          data: {
+            entity_id,
+            command: "set_clean_mode",
+            params: { mode: "vacuum" },
+          },
+        };
+
       case RvcSupportedCleanMode.Mop:
-        option = "Mop";
-        break;
+        return {
+          action: "vacuum.send_command",
+          data: {
+            entity_id,
+            command: "set_clean_mode",
+            params: { mode: "mop" },
+          },
+        };
+
       case RvcSupportedCleanMode.Both:
       default:
-        option = "Both";
-        break;
+        return {
+          action: "vacuum.send_command",
+          data: {
+            entity_id,
+            command: "set_clean_mode",
+            params: { mode: "both" },
+          },
+        };
     }
-
-    // HA action: you can change the entity_id or service here if you prefer
-    return {
-      action: "input_select.select_option",
-      data: {
-        entity_id: "input_select.rvc_clean_mode",
-        option,
-      },
-    };
   },
 });
