@@ -36,4 +36,5 @@ export interface RvcCleanModeServerImplementation {
  */
 export const RvcCleanModeServer = (
   _impl: RvcCleanModeServerImplementation,
-) => Base;
+) =>
+  Base;
