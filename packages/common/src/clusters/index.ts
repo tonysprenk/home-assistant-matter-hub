@@ -37,4 +37,5 @@ export enum ClusterId {
   mediaInput = "mediaInput",
   rvcRunMode = "rvcRunMode",
   rvcOperationalState = "rvcOperationalState",
+  rvcCleanMode = "rvcCleanMode",
 }
