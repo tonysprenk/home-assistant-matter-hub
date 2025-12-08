@@ -1,16 +1,17 @@
+// packages/backend/src/matter/endpoints/legacy/vacuum/behaviors/vacuum-rvc-clean-mode-server.ts
+
 import { RvcCleanMode } from "@matter/main/clusters";
 import {
   RvcCleanModeServer,
-  type RvcSupportedCleanMode,
+  type RvcCleanModeServerImplementation,
 } from "../../../../behaviors/rvc-clean-mode-server.js";
 
-// Internal numeric IDs for clean modes
-const CLEAN_MODE_VACUUM = 0;
-const CLEAN_MODE_MOP = 1;
-const CLEAN_MODE_BOTH = 2;
+const CLEAN_MODE_VACUUM = RvcCleanMode.Mode?.Vacuum ?? 0;
+const CLEAN_MODE_MOP = RvcCleanMode.Mode?.Mop ?? 1;
+const CLEAN_MODE_BOTH = RvcCleanMode.Mode?.VacuumAndMop ?? 2;
 
 // Simple in-memory mode so Matter can reflect the selected mode
-let currentCleanMode: RvcSupportedCleanMode = CLEAN_MODE_BOTH;
+let currentCleanMode: number = CLEAN_MODE_BOTH;
 
 /**
  * NOTE:
@@ -24,7 +25,7 @@ let currentCleanMode: RvcSupportedCleanMode = CLEAN_MODE_BOTH;
  *   logic lives in HA where it belongs.
  */
 export const VacuumRvcCleanModeServer = RvcCleanModeServer({
-  // we keep the source of truth in currentCleanMode
+  // We keep the source of truth in currentCleanMode
   getCurrentMode: () => currentCleanMode,
 
   getSupportedModes: () => [
@@ -46,18 +47,17 @@ export const VacuumRvcCleanModeServer = RvcCleanModeServer({
   ],
 
   setMode: (newMode) => {
-    currentCleanMode = newMode as RvcSupportedCleanMode;
+    currentCleanMode = newMode;
 
-    // Map numeric mode → human-readable option for the helper
+    // Map enum → human-readable option for the helper
     let option: string;
-    switch (currentCleanMode) {
+    switch (newMode) {
       case CLEAN_MODE_VACUUM:
         option = "Vacuum";
         break;
       case CLEAN_MODE_MOP:
         option = "Mop";
         break;
-      case CLEAN_MODE_BOTH:
       default:
         option = "Both";
         break;
@@ -72,4 +72,4 @@ export const VacuumRvcCleanModeServer = RvcCleanModeServer({
       },
     };
   },
-});
+} satisfies RvcCleanModeServerImplementation);
