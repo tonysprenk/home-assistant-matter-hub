@@ -2,7 +2,7 @@
 
 import { RvcCleanModeServer as Base } from "@matter/main/behaviors";
 import { applyPatchState } from "../../utils/apply-patch-state.js";
-import { HomeAssistantEntityBehavior } from "./home-assistant-entity-behavior.js";
+import type { HomeAssistantEntityBehavior } from "./home-assistant-entity-behavior.js";
 
 /**
  * For the backend we keep this intentionally generic and do **not**
@@ -43,9 +43,7 @@ export interface RvcCleanModeServerImplementation {
  * We avoid referring to RvcCleanMode.Mode or ModeBase.ModeOptionStruct here
  * to stay compatible with the @matter/types version used by this project.
  */
-export const RvcCleanModeServer = (
-  impl: RvcCleanModeServerImplementation,
-) =>
+export const RvcCleanModeServer = (impl: RvcCleanModeServerImplementation) =>
   Base.with<HomeAssistantEntityBehavior>({
     // From Home Assistant → Matter
     updateFromHomeAssistant(state, _haEntity) {
