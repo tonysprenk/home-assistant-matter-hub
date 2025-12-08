@@ -1,60 +1,76 @@
 // packages/backend/src/matter/endpoints/legacy/vacuum/behaviors/vacuum-rvc-clean-mode-server.ts
 
-import {
-  RvcCleanModeServer,
-  RvcSupportedCleanMode,
-} from "../../../../behaviors/rvc-clean-mode-server.js";
+import { RvcCleanModeServer } from "../../../../behaviors/rvc-clean-mode-server.js";
 
-// Simple in-memory mode so Matter can reflect the selected mode.
-let currentCleanMode: RvcSupportedCleanMode = RvcSupportedCleanMode.Both;
+// Simple numeric codes for the clean modes
+const CLEAN_MODE_VACUUM = 0;
+const CLEAN_MODE_MOP = 1;
+const CLEAN_MODE_BOTH = 2;
 
+// Simple in-memory mode so Matter can reflect the selected mode
+let currentCleanMode = CLEAN_MODE_BOTH;
+
+const SUPPORTED_MODES = [
+  {
+    label: "Vacuum",
+    mode: CLEAN_MODE_VACUUM,
+    // Empty tags are fine; we don’t rely on them
+    modeTags: [] as unknown[],
+  },
+  {
+    label: "Mop",
+    mode: CLEAN_MODE_MOP,
+    modeTags: [] as unknown[],
+  },
+  {
+    label: "Both",
+    mode: CLEAN_MODE_BOTH,
+    modeTags: [] as unknown[],
+  },
+];
+
+/**
+ * Vacuum-specific RVC Clean Mode server.
+ *
+ * - Matter → HA:
+ *   When a controller changes the mode, we update our in-memory
+ *   `currentCleanMode` and return an HA action that sets the
+ *   `input_select.rvc_clean_mode` helper to "Vacuum" | "Mop" | "Both".
+ *
+ * - HA → Matter:
+ *   For now, we simply expose the in-memory `currentCleanMode` and
+ *   our static SUPPORTED_MODES back to Matter.
+ */
 export const VacuumRvcCleanModeServer = RvcCleanModeServer({
-  // Matter → HA (state reporting)
-  getCurrentMode: () => currentCleanMode,
+  // HA → Matter: for now we ignore the HA entity and just expose our
+  // local state so Matter controllers see the current mode + options.
+  getStateFromHomeAssistant(_haEntity) {
+    return {
+      currentMode: currentCleanMode,
+      supportedModes: SUPPORTED_MODES,
+    };
+  },
 
-  getSupportedModes: () => [
-    {
-      label: "Vacuum",
-      mode: RvcSupportedCleanMode.Vacuum,
-      // We intentionally leave modeTags as an empty array; the cluster will
-      // still behave correctly and we avoid relying on RvcCleanMode.ModeTag,
-      // whose exact values differ by Matter version.
-      modeTags: [],
-    },
-    {
-      label: "Mop",
-      mode: RvcSupportedCleanMode.Mop,
-      modeTags: [],
-    },
-    {
-      label: "Both",
-      mode: RvcSupportedCleanMode.Both,
-      modeTags: [],
-    },
-  ],
-
-  // HA side-effect when Matter client changes the clean mode
-  setMode: (newMode) => {
-    currentCleanMode = newMode as RvcSupportedCleanMode;
+  // Matter → HA: called when a Matter controller changes the mode.
+  setMode(newMode: number) {
+    currentCleanMode = newMode;
 
     let option: string;
-    switch (currentCleanMode) {
-      case RvcSupportedCleanMode.Vacuum:
+    switch (newMode) {
+      case CLEAN_MODE_VACUUM:
         option = "Vacuum";
         break;
-      case RvcSupportedCleanMode.Mop:
+      case CLEAN_MODE_MOP:
         option = "Mop";
         break;
-      // Treat "Both" and anything unknown as "Both"
-      case RvcSupportedCleanMode.Both:
+      case CLEAN_MODE_BOTH:
       default:
         option = "Both";
         break;
     }
 
-    // This mirrors the style of other behaviors in the repo:
-    // the return value is a "callAction" descriptor that the
-    // HomeAssistantEntityBehavior will execute.
+    // Home Assistant action description:
+    // you can adapt the entity_id if you prefer a different helper name.
     return {
       action: "input_select.select_option",
       data: {
