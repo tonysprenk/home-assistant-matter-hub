@@ -1,23 +1,24 @@
 // packages/backend/src/matter/endpoints/legacy/vacuum/behaviors/vacuum-rvc-clean-mode-server.ts
 
-import { RvcCleanMode } from "@matter/main/clusters";
 import {
   RvcCleanModeServer,
-  type RvcCleanModeServerImplementation,
+  RvcSupportedCleanMode,
 } from "../../../../behaviors/rvc-clean-mode-server.js";
 
-const CLEAN_MODE_VACUUM = RvcCleanMode.Mode?.Vacuum ?? 0;
-const CLEAN_MODE_MOP = RvcCleanMode.Mode?.Mop ?? 1;
-const CLEAN_MODE_BOTH = RvcCleanMode.Mode?.VacuumAndMop ?? 2;
+// Simple numeric codes for the clean modes
+const CLEAN_MODE_VACUUM: RvcSupportedCleanMode = 0;
+const CLEAN_MODE_MOP: RvcSupportedCleanMode = 1;
+const CLEAN_MODE_BOTH: RvcSupportedCleanMode = 2;
 
 // Simple in-memory mode so Matter can reflect the selected mode
-let currentCleanMode: number = CLEAN_MODE_BOTH;
+let currentCleanMode: RvcSupportedCleanMode = CLEAN_MODE_BOTH;
 
 /**
  * NOTE:
  * - This example assumes you create an input_select in HA:
  *     input_select.rvc_clean_mode
  *   with options: "Vacuum", "Mop", "Both".
+ *
  * - You can then use an automation/script in HA that reacts to changes of this
  *   input_select and actually calls your Roborock / vacuum services.
  *
@@ -32,24 +33,25 @@ export const VacuumRvcCleanModeServer = RvcCleanModeServer({
     {
       label: "Vacuum",
       mode: CLEAN_MODE_VACUUM,
-      modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }],
+      // Mode tags are not used by the add-on right now, so we keep this generic.
+      modeTags: [],
     },
     {
       label: "Mop",
       mode: CLEAN_MODE_MOP,
-      modeTags: [{ value: RvcCleanMode.ModeTag.Mop }],
+      modeTags: [],
     },
     {
       label: "Both",
       mode: CLEAN_MODE_BOTH,
-      modeTags: [{ value: RvcCleanMode.ModeTag.VacuumAndMop }],
+      modeTags: [],
     },
   ],
 
   setMode: (newMode) => {
     currentCleanMode = newMode;
 
-    // Map enum → human-readable option for the helper
+    // Map numeric code → human-readable option for the HA helper
     let option: string;
     switch (newMode) {
       case CLEAN_MODE_VACUUM:
@@ -72,4 +74,4 @@ export const VacuumRvcCleanModeServer = RvcCleanModeServer({
       },
     };
   },
-} satisfies RvcCleanModeServerImplementation);
+});
