@@ -10,9 +10,9 @@ export * from "./media-input.js";
 export * from "./occupancy-sensing.js";
 export * from "./on-off.js";
 export * from "./relative-humidity-measurement.js";
+export * from "./rvc-clean-mode.js";
 export * from "./rvc-operational-state.js";
 export * from "./rvc-run-mode.js";
-export * from "./rvc-clean-mode.js";  // ← add this line
 export * from "./temperature-measurement.js";
 export * from "./thermostat.js";
 export * from "./window-covering.js";
@@ -40,5 +40,5 @@ export enum ClusterId {
   mediaInput = "mediaInput",
   rvcRunMode = "rvcRunMode",
   rvcOperationalState = "rvcOperationalState",
-  rvcCleanMode = "rvcCleanMode",      // ← add this line
+  rvcCleanMode = "rvcCleanMode",
 }
