@@ -2,70 +2,59 @@
 
 import {
   RvcCleanModeServer,
-  type RvcSupportedCleanMode,
+  RvcSupportedCleanMode,
 } from "../../../../behaviors/rvc-clean-mode-server.js";
 
-// Simple numeric codes for the clean modes
-const CLEAN_MODE_VACUUM: RvcSupportedCleanMode = 0;
-const CLEAN_MODE_MOP: RvcSupportedCleanMode = 1;
-const CLEAN_MODE_BOTH: RvcSupportedCleanMode = 2;
+// Simple in-memory mode so Matter can reflect the selected mode.
+let currentCleanMode: RvcSupportedCleanMode = RvcSupportedCleanMode.Both;
 
-// Simple in-memory mode so Matter can reflect the selected mode
-let currentCleanMode: RvcSupportedCleanMode = CLEAN_MODE_BOTH;
-
-/**
- * NOTE:
- * - This example assumes you create an input_select in HA:
- *     input_select.rvc_clean_mode
- *   with options: "Vacuum", "Mop", "Both".
- *
- * - You can then use an automation/script in HA that reacts to changes of this
- *   input_select and actually calls your Roborock / vacuum services.
- *
- *   That way the Matter add-on stays generic and the integration-specific
- *   logic lives in HA where it belongs.
- */
 export const VacuumRvcCleanModeServer = RvcCleanModeServer({
-  // We keep the source of truth in currentCleanMode
+  // Matter → HA (state reporting)
   getCurrentMode: () => currentCleanMode,
 
   getSupportedModes: () => [
     {
       label: "Vacuum",
-      mode: CLEAN_MODE_VACUUM,
-      // Mode tags are not used by the add-on right now, so we keep this generic.
+      mode: RvcSupportedCleanMode.Vacuum,
+      // We intentionally leave modeTags as an empty array; the cluster will
+      // still behave correctly and we avoid relying on RvcCleanMode.ModeTag,
+      // whose exact values differ by Matter version.
       modeTags: [],
     },
     {
       label: "Mop",
-      mode: CLEAN_MODE_MOP,
+      mode: RvcSupportedCleanMode.Mop,
       modeTags: [],
     },
     {
       label: "Both",
-      mode: CLEAN_MODE_BOTH,
+      mode: RvcSupportedCleanMode.Both,
       modeTags: [],
     },
   ],
 
+  // HA side-effect when Matter client changes the clean mode
   setMode: (newMode) => {
-    currentCleanMode = newMode;
+    currentCleanMode = newMode as RvcSupportedCleanMode;
 
-    // Map numeric code → human-readable option for the HA helper
     let option: string;
-    switch (newMode) {
-      case CLEAN_MODE_VACUUM:
+    switch (currentCleanMode) {
+      case RvcSupportedCleanMode.Vacuum:
         option = "Vacuum";
         break;
-      case CLEAN_MODE_MOP:
+      case RvcSupportedCleanMode.Mop:
         option = "Mop";
         break;
+      // Treat "Both" and anything unknown as "Both"
+      case RvcSupportedCleanMode.Both:
       default:
         option = "Both";
         break;
     }
 
-    // HA action: you can change the entity_id or service here if you prefer
+    // This mirrors the style of other behaviors in the repo:
+    // the return value is a "callAction" descriptor that the
+    // HomeAssistantEntityBehavior will execute.
     return {
       action: "input_select.select_option",
       data: {
