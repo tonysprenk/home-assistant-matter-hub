@@ -2,7 +2,7 @@
 
 import {
   RvcCleanModeServer,
-  RvcSupportedCleanMode,
+  type RvcSupportedCleanMode,
 } from "../../../../behaviors/rvc-clean-mode-server.js";
 
 // Simple numeric codes for the clean modes
