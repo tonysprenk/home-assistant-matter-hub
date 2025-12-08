@@ -42,9 +42,12 @@ export interface RvcCleanModeServerImplementation {
  *
  * We avoid referring to RvcCleanMode.Mode or ModeBase.ModeOptionStruct here
  * to stay compatible with the @matter/types version used by this project.
+ *
+ * `Base.with` in this Matter version expects `(features, options)`, so we
+ * explicitly pass `undefined` for the features argument.
  */
 export const RvcCleanModeServer = (impl: RvcCleanModeServerImplementation) =>
-  Base.with<HomeAssistantEntityBehavior>({
+  (Base as any).with<HomeAssistantEntityBehavior>(undefined, {
     // From Home Assistant → Matter
     updateFromHomeAssistant(state, _haEntity) {
       const currentMode = impl.getCurrentMode();
