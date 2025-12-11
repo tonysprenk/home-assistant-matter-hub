@@ -12,7 +12,7 @@ import { RvcCleanModeServer as Base } from "@matter/main/behaviors";
  *
  * We intentionally do **not** change any of the behavior's features here,
  * to avoid running into "invalid feature identifier" errors from the
- * ClusterComposer used in @matter/types.
+ * bump ClusterComposer used in @matter/types.
  */
 
 // Re-export the upstream behavior unchanged
