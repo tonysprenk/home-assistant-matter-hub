@@ -3,7 +3,7 @@
 import { RvcCleanModeServer as Base } from "@matter/main/behaviors";
 
 /**
- * Thin wrapper around the upstream RvcCleanModeServer behavior.
+ * bump Thin wrapper around the upstream RvcCleanModeServer behavior.
  *
  * We keep this file so that:
  * - the backend has a stable place to import the server from, and
